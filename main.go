@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"math"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
@@ -41,65 +42,67 @@ func getColorFromPos(xPos, yPos, xSize, ySize int) color.Color {
 }
 
 func colorFromComplexNum(c complex128) color.Color {
-	iVal := calcIterations(c)
+	iVal, maxI := calcIterations(c)
 
-	// black and white version
-	// return color.RGBA{255 - uint8(iVal), 255 - uint8(iVal), 255 - uint8(iVal), 255}
+	H := math.Mod(float64(iVal*10), 360)
+	S := float64(0.8)
+	L := float64(0.5)
 
-	var colorList [11]color.Color
-	var threshold [11]int
-
-	colorList[0] = color.RGBA{249, 65, 68, 255}
-	threshold[0] = 2
-
-	colorList[1] = color.RGBA{243, 114, 44, 255}
-	threshold[1] = 3
-
-	colorList[2] = color.RGBA{249, 132, 74, 255}
-	threshold[2] = 4
-
-	colorList[3] = color.RGBA{248, 150, 30, 255}
-	threshold[3] = 5
-
-	colorList[4] = color.RGBA{249, 199, 79, 255}
-	threshold[4] = 8
-
-	colorList[5] = color.RGBA{144, 190, 109, 255}
-	threshold[5] = 16
-
-	colorList[6] = color.RGBA{67, 170, 139, 255}
-	threshold[6] = 32
-
-	colorList[7] = color.RGBA{77, 144, 142, 255}
-	threshold[7] = 64
-
-	colorList[8] = color.RGBA{87, 117, 144, 255}
-	threshold[8] = 100
-
-	colorList[9] = color.RGBA{39, 125, 161, 255}
-	threshold[9] = 175
-
-	colorList[10] = color.RGBA{39, 79, 160, 255}
-	threshold[10] = 254
-
-	for i := 0; i < len(threshold); i++ {
-		if threshold[i] > iVal {
-			return colorList[i]
-		}
+	if iVal == maxI {
+		return color.RGBA{0, 0, 0, 255}
 	}
-	return color.RGBA{0, 0, 0, 255}
+
+	return hslToRGBA(H, L, S)
 
 }
 
-func calcIterations(c complex128) int {
+func calcIterations(c complex128) (int, int) {
+	max := 1000
 	z := 0 + 0i
 	i := 0
 
-	for i < 255 && real(z)*real(z)+imag(z)*imag(z) < 4 {
+	for i < max && real(z)*real(z)+imag(z)*imag(z) < 4 {
 		z *= z
 		z += c
 		i++
 	}
 
-	return i
+	return i, max
+}
+
+func hslToRGBA(H, L, S float64) color.Color {
+
+	C := (1 - math.Abs((2*L)-1)) * S
+	X := C * (1 - math.Abs(math.Mod((H/60), 2)-1))
+	M := L - (C / 2)
+
+	var R, G, B float64
+
+	if H >= 0 && H < 60 {
+		R = C
+		G = X
+		B = 0
+	} else if H >= 60 && H < 120 {
+		R = X
+		G = C
+		B = 0
+	} else if H >= 120 && H < 180 {
+		R = 0
+		G = C
+		B = X
+	} else if H >= 180 && H < 240 {
+		R = 0
+		G = X
+		B = C
+	} else if H >= 240 && H < 300 {
+		R = X
+		G = 0
+		B = C
+	} else {
+		R = C
+		G = 0
+		B = X
+	}
+
+	return color.RGBA{uint8((R + M) * 255), uint8((G + M) * 255), uint8((B + M) * 255), 255}
 }
