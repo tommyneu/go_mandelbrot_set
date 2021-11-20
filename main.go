@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"math"
 
@@ -14,27 +13,54 @@ func main() {
 
 	myApp := app.New()
 	w := myApp.NewWindow("Mandelbrot Set")
+	scale := 2.5
+	xCenter := -2.0
+	yCenter := -1.25
 
 	raster := canvas.NewRasterWithPixels(
 		func(x, y, w, h int) color.Color {
-			return getColorFromPos(x, y, w, h)
+			return getColorFromPos(x, y, w, h, scale, xCenter, yCenter)
 		})
 	w.SetContent(raster)
 
 	w.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
-		if k.Name == "G" {
+		if k.Name == "-" {
+			if scale*1.1 > 2.5 {
+				return
+			}
+			scale *= 1.1
 			raster.Refresh()
 		}
-		fmt.Println(k.Name)
+		if k.Name == "=" {
+			scale /= 1.1
+			raster.Refresh()
+		}
+
+		if k.Name == "Up" {
+			yCenter -= (scale / 10)
+			raster.Refresh()
+		}
+		if k.Name == "Down" {
+			yCenter += (scale / 10)
+			raster.Refresh()
+		}
+		if k.Name == "Left" {
+			xCenter -= (scale / 10)
+			raster.Refresh()
+		}
+		if k.Name == "Right" {
+			xCenter += (scale / 10)
+			raster.Refresh()
+		}
 	})
 
 	w.Resize(fyne.NewSize(600, 600))
 	w.ShowAndRun()
 }
 
-func getColorFromPos(xPos, yPos, xSize, ySize int) color.Color {
-	manX := ((float64(xPos) / float64(xSize)) * 2.5) - 2
-	manY := ((float64(yPos) / float64(ySize)) * 2.5) - 1.25
+func getColorFromPos(xPos, yPos, xSize, ySize int, scale, xCenter, yCenter float64) color.Color {
+	manX := xCenter + ((float64(xPos) / float64(xSize)) * scale)
+	manY := yCenter + ((float64(yPos) / float64(ySize)) * scale)
 
 	c := complex(manX, manY)
 
@@ -57,7 +83,7 @@ func colorFromComplexNum(c complex128) color.Color {
 }
 
 func calcIterations(c complex128) (int, int) {
-	max := 1000
+	max := 255
 	z := 0 + 0i
 	i := 0
 
